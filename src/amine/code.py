@@ -69,8 +69,9 @@ def get_statistics_text(digits):
 
 # TODO: Create a feature matrix and a vector of labels
 print(digits.data)
+#label valeur exacte dans l'échantillon != taget valeur à predire
 X = digits.data
-y = None
+y = digits.target
 
 # Print dataset shape
 print(f"Feature matrix shape: {X.shape}. Max value = {np.max(X)}, Min value = {np.min(X)}, Mean value = {np.mean(X)}")
@@ -78,13 +79,13 @@ print(f"Labels shape: {y.shape}")
 
 
 # TODO: Normalize pixel values to range [0,1]
-F = None  # Feature matrix after scaling
+F = X/16  # Feature matrix after scaling bc its between 0 and 16
 
 # Print matrix shape
 print(f"Feature matrix F shape: {F.shape}. Max value = {np.max(F)}, Min value = {np.min(F)}, Mean value = {np.mean(F)}")
 
 ##########################################
-## Dimensionality reduction
+##        Dimensionality reduction      ##
 ##########################################
 
 
