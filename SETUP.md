@@ -59,3 +59,28 @@ git add .
 git commit -m "Day X: What you did"
 git push
 ```
+
+## Contributors
+
+### 1. Clone the Repository
+```
+git clone https://github.com/bogwee/intro_ml_2025.git
+```
+
+### 2. Set Up Git Locally
+```
+git config --global user.name "Their Name"
+git config --global user.email "their.email@example.com"
+```
+
+### 3. Best Practices for Collaboration
+```
+git pull origin main
+```
+
+### 4. Start Collaborating
+```
+git add .
+git commit -m "Your message"
+git push origin main
+```
