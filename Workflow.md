@@ -18,4 +18,6 @@ This document explains our day to day task, and what we have learned.
 
 - Our dataset is a multi-dimensional matrix, with each instance described by 64 pixel intensity features. To reduce noise, facilitate visualization, and train our model more effectively, we will apply Principal Component Analysis (PCA) to reduce the dimensionality of the data.
 
+- PCA analyzes the covariance structure of the entire dataset, finds the two orthogonal directions that capture the most variance in the data, and then projects each data point onto these two principal component axes, reducing from 64D to 2D.
+
 - After transformation, the data is reduced to 2 dimensions, enabling us to apply machine learning methods more efficiently and with less complexity. When needed, we can use the inverse transform to restore the data to its original format, thus simplifying our overall workflow. 
