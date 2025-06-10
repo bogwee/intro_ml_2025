@@ -1,16 +1,21 @@
-# TODO: Import necessary libraries
-
-
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_digits
 
 ##########################################
 ## Data loading and first visualisation
 ##########################################
 
 # Load the handwritten digits dataset
-digits = # TODO: Write your own code!
+digits = load_digits()
 
 # Visualize some images
-# TODO: Graph the first4 images from the data base 
+def first4():
+    for i in range(4):
+        plt.imshow(digits.images[i],cmap='gray')
+        plt.show()
+#first4()
+
 
 # Display at least one random sample par class (some repetitions of class... oh well)
 def plot_multi(data, y):
@@ -29,20 +34,24 @@ def plot_multi(data, y):
     plt.show()
 
 
-plot_multi(digits.data, digits.target)
+#plot_multi(digits.data, digits.target)
 
 ##########################################
 ## Data exploration and first analysis
 ##########################################
 
-def get_statistics_text(targets):
-    # TODO: Write your code here, returning at least the following useful infos:
-    # * Label names
-    # * Number of elements per class
-    return None
+def get_statistics_text(digits):
+    print(f"Colonnes du dataset : {digits.keys()}")
+    print(f"Targets possibles   : {digits.target_names}")
+    print(f"Première image :\n{digits.images[0]}")
+    print(f"Nombre total d'images : {digits.images.shape[0]}")
 
-# TODO: Call the previous function and generate graphs and prints for exploring and visualising the database
+    unique, counts = np.unique(digits.target, return_counts=True)
+    print("Nombre d'occurrences pour chaque chiffre :")
+    for val, count in zip(unique, counts):
+        print(f"{val} : {count} images")
 
+#get_statistics_text(digits)
 
 
 ##########################################
@@ -59,7 +68,8 @@ def get_statistics_text(targets):
 #]
 
 # TODO: Create a feature matrix and a vector of labels
-X = None
+print(digits.data)
+X = digits.data
 y = None
 
 # Print dataset shape
