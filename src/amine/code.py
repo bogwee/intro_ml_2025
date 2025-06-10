@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.datasets import load_digits
+from sklearn.decomposition import PCA
+from sklearn.metrics import mean_squared_error
 
 ##########################################
 ## Data loading and first visualisation
@@ -68,7 +70,6 @@ def get_statistics_text(digits):
 #]
 
 # TODO: Create a feature matrix and a vector of labels
-print(digits.data)
 #label valeur exacte dans l'échantillon != taget valeur à predire
 X = digits.data
 y = digits.target
@@ -101,13 +102,33 @@ original_image = F[sample_index].reshape(8, 8)  # Reshape back to 8×8 for visua
 # * Quantify the error in the approximation
 # Finally: plot the original image and the 15 approximation on a 4x4 subfigure
 
-#### TODO: Expolore the explanined variance of PCA and plot 
+pca = PCA(n_components=2)
+F_pca = pca.fit_transform(F) 
 
-# Create the visualization plot
+#plot
+plt.figure(figsize=(8,6))
+scatter = plt.scatter(F_pca[:, 0], F_pca[:, 1], c=digits.target, cmap='tab10', alpha=0.7)
+plt.legend(*scatter.legend_elements(), title="Chiffres")
+plt.title("Projection PCA à 2 dimensions du dataset digits")
+plt.xlabel("Composante principale 1")
+plt.ylabel("Composante principale 2")
+plt.grid(True)
+plt.show()
 
+F_ipca = pca.inverse_transform(F_pca)
+print(f"L'erreur quadratique moyenne est :", mean_squared_error(F, F_ipca))
 
-### TODO: Display the whole database in 2D: 
+plt.subplot(1,2,1)
+img0 = X[0].reshape(8,8)
+plt.imshow(img0,cmap='gray')
+plt.title("Image originale")
 
+plt.subplot(1,2,2)
+img1 = F_ipca[0].reshape(8,8)
+plt.imshow(img1,cmap='gray')
+plt.title("Image reconstruite")
+
+plt.show()
 
 ### TODO: Create a 20 dimensional PCA-based feature matrix
 
