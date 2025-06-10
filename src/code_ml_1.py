@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import chardet
+from sklearn.datasets import load_digits
 from sklearn.preprocessing import LabelEncoder
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
@@ -15,7 +16,7 @@ from sklearn.decomposition import PCA
 ##########################################
 
 # Load the handwritten digits dataset
-digits = 3
+digits = load_digits()
 
 # Visualize some images
 # TODO: Graph the first4 images from the data base 
@@ -37,7 +38,7 @@ def plot_multi(data, y):
     plt.show()
 
 
-plot_multi(digits.data, digits.target)
+#plot_multi(digits.data, digits.target)
 
 ##########################################
 ## Data exploration and first analysis
@@ -46,13 +47,10 @@ plot_multi(digits.data, digits.target)
 def get_statistics_text(targets):
     encoder = LabelEncoder()
     encoder_labels = encoder.fit_transform(targets)
-
     decoded_labels = encoder.inverse_transform(encoder_labels)
-    print(decoded_labels)
-    # TODO: Write your code here, returning at least the following useful infos:
-    # * Label names
-    # * Number of elements per class
-    return None
+    print(f"label names : {decoded_labels}, Umber of elements per class : {len(targets)}")
+
+get_statistics_text(digits.target)
 
 # TODO: Call the previous function and generate graphs and prints for exploring and visualising the database
 
@@ -72,8 +70,8 @@ def get_statistics_text(targets):
 #]
 
 # TODO: Create a feature matrix and a vector of labels
-X = None
-y = None
+X = digits.data
+y = digits.target
 
 # Print dataset shape
 print(f"Feature matrix shape: {X.shape}. Max value = {np.max(X)}, Min value = {np.min(X)}, Mean value = {np.mean(X)}")
