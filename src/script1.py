@@ -1,16 +1,25 @@
-# TODO: Import necessary libraries
-
-
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_digits
+from sklearn.decomposition import PCA
+from sklearn.metrics import mean_squared_error
 
 ##########################################
 ## Data loading and first visualisation
 ##########################################
 
 # Load the handwritten digits dataset
-digits = # TODO: Write your own code!
+digits = load_digits()
 
 # Visualize some images
-# TODO: Graph the first4 images from the data base 
+def first4():
+    for i in range(4):
+        plt.subplot(2,2,i+1)
+        plt.imshow(digits.images[i],cmap='gray')
+    plt.show()
+
+#first4()
+
 
 # Display at least one random sample par class (some repetitions of class... oh well)
 def plot_multi(data, y):
@@ -29,20 +38,24 @@ def plot_multi(data, y):
     plt.show()
 
 
-plot_multi(digits.data, digits.target)
+#plot_multi(digits.data, digits.target)
 
 ##########################################
 ## Data exploration and first analysis
 ##########################################
 
-def get_statistics_text(targets):
-    # TODO: Write your code here, returning at least the following useful infos:
-    # * Label names
-    # * Number of elements per class
-    return None
+def get_statistics_text(digits):
+    print(f"Colonnes du dataset : {digits.keys()}")
+    print(f"Targets possibles   : {digits.target_names}")
+    print(f"Première image :\n{digits.images[0]}")
+    print(f"Nombre total d'images : {digits.images.shape[0]}")
 
-# TODO: Call the previous function and generate graphs and prints for exploring and visualising the database
+    unique, counts = np.unique(digits.target, return_counts=True)
+    print("Nombre d'occurrences pour chaque chiffre :")
+    for val, count in zip(unique, counts):
+        print(f"{val} : {count} images")
 
+#get_statistics_text(digits)
 
 
 ##########################################
@@ -59,8 +72,9 @@ def get_statistics_text(targets):
 #]
 
 # TODO: Create a feature matrix and a vector of labels
-X = None
-y = None
+#label valeur exacte dans l'échantillon != taget valeur à predire
+X = digits.data
+y = digits.target
 
 # Print dataset shape
 print(f"Feature matrix shape: {X.shape}. Max value = {np.max(X)}, Min value = {np.min(X)}, Mean value = {np.mean(X)}")
@@ -68,13 +82,13 @@ print(f"Labels shape: {y.shape}")
 
 
 # TODO: Normalize pixel values to range [0,1]
-F = None  # Feature matrix after scaling
+F = X/16  # Feature matrix after scaling bc its between 0 and 16
 
 # Print matrix shape
 print(f"Feature matrix F shape: {F.shape}. Max value = {np.max(F)}, Min value = {np.min(F)}, Mean value = {np.mean(F)}")
 
 ##########################################
-## Dimensionality reduction
+##        Dimensionality reduction      ##
 ##########################################
 
 
@@ -90,21 +104,33 @@ original_image = F[sample_index].reshape(8, 8)  # Reshape back to 8×8 for visua
 # * Quantify the error in the approximation
 # Finally: plot the original image and the 15 approximation on a 4x4 subfigure
 
-#### TODO: Expolore the explanined variance of PCA and plot 
+pca = PCA(n_components=2)
+F_pca = pca.fit_transform(F) 
 
-# Create the visualization plot
+#plot
+plt.figure(figsize=(8,6))
+scatter = plt.scatter(F_pca[:, 0], F_pca[:, 1], c=digits.target, cmap='tab10', alpha=0.7)
+plt.legend(*scatter.legend_elements(), title="Chiffres")
+plt.title("Projection PCA à 2 dimensions du dataset digits")
+plt.xlabel("Composante principale 1")
+plt.ylabel("Composante principale 2")
+plt.grid(True)
+plt.show()
 
+F_ipca = pca.inverse_transform(F_pca)
+print(f"L'erreur quadratique moyenne est :", mean_squared_error(F, F_ipca))
 
-### TODO: Display the whole database in 2D: 
+plt.subplot(1,2,1)
+img0 = X[0].reshape(8,8)
+plt.imshow(img0,cmap='gray')
+plt.title("Image originale")
 
+plt.subplot(1,2,2)
+img1 = F_ipca[0].reshape(8,8)
+plt.imshow(img1,cmap='gray')
+plt.title("Image reconstruite")
 
-### TODO: Create a 20 dimensional PCA-based feature matrix
-
-F_pca = None
-
-# Print reduced feature matrix shape
-print(f"Feature matrix F_pca shape: {F_pca.shape}")
-
+plt.show()
 
 ##########################################
 ## Feature engineering
@@ -112,26 +138,39 @@ print(f"Feature matrix F_pca shape: {F_pca.shape}")
 ### # Function to extract zone-based features
 ###  Zone-Based Partitioning is a feature extraction method
 ### that helps break down an image into smaller meaningful regions to analyze specific patterns.
-def extract_zone_features(images):
-    '''Break down an 8x8 image in 3 zones: row 1-3, 4-5, and 6-8'''
-    # TODO: Fill in code
-    return np.array([])
+def extract_zone_features(X):
+    n = X.shape[0]
+    res = np.zeros((n, 3))
+    for i in range(n):
+        zone1 = np.mean(X[i, 0:24])
+        zone2 = np.mean(X[i, 24:40])
+        zone3 = np.mean(X[i, 40:64])
+        res[i, :] = [zone1, zone2, zone3]
+    return res
 
 # Apply zone-based feature extraction
-F_zones = extract_zone_features('''some data''')
+F_zones = extract_zone_features(X)
 
 # Print extracted feature shape
 print(f"Feature matrix F_zones shape: {F_zones.shape}")
 
 
 ### Edge detection features
-
+from skimage.filters import sobel
 ## TODO: Get used to the Sobel filter by applying it to an image and displaying both the original image 
 # and the result of applying the Sobel filter side by side
 
 
 # TODO: Compute the average edge intensity for each image and return it as an n by 1 array
-F_edges = None
+def apply_sobel(X):
+    n = X.shape[0]
+    sobel_mean = np.zeros((n,1))
+    for i in range(n):
+        img = X[i].reshape(8, 8)
+        sobel_img = sobel(img)
+        sobel_mean[i] = np.mean(sobel_img)
+    return sobel_mean
+F_edges = apply_sobel(X)
 
 # Print feature shape after edge extraction
 print(f"Feature matrix F_edges shape: {F_edges.shape}")
@@ -139,10 +178,14 @@ print(f"Feature matrix F_edges shape: {F_edges.shape}")
 ### connect all the features together
 
 # TODO: Concatenate PCA, zone-based, and edge features
-F_final = None 
+def all_features(X_normalized):
+    pca = PCA(n_components=20)
+    X_pca = pca.fit_transform(X_normalized)
+    X_zone = extract_zone_features(X_normalized)
+    X_sobel = apply_sobel(X_normalized)
+    X_all = np.hstack((X_pca, X_zone, X_sobel))
+    return X_all
 
-# TODO: Normalize final features
-F_final = F_final
+F_final = all_features(F)
 
-# Print final feature matrix shape
-print(f"Final feature matrix F_final shape: {F_final.shape}")
+print(f"Dimensions avec toutes les features :",F_final.shape)

@@ -15,14 +15,15 @@ from skimage.filters import sobel
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import GridSearchCV
+import seaborn as sns
 
 
 # TODO: Add any util functions you may have from the previous script
 
 
 # TODO: Load the raw data
-X,y = None, None
-
+digits = load_digits()
+X,y = digits.data, digits.target
 #####
 #In machine learning, we must train the model on one subset of data and test it on another.
 #This prevents the model from memorizing the data and instead helps it generalize to unseen examples.
@@ -41,21 +42,35 @@ X,y = None, None
 
 # 1- Split dataset into training & testing sets
 # TODO: FILL OUT THE CORRECT SPLITTING HERE
-X_train, X_test, y_train, y_test = X[0:-100,:], X[-100:,:], y[0:-100], y[-100:]
-### If you want, you could save the data, this would be a good way to test your final script in the same evaluation mode as what we will be doing
-# np.save("X_train.npy", X_train)
-# np.save("test_data.npy", X_test)
-# np.save("y_train.npy", y_train)
-# np.save("test_label.npy", y_test)
-####
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=40)
+
 
 # TODO: Print dataset split summary...
-
+print("Taille du X_train :", X_train.shape)
+print("Taille du X_test :", X_test.shape)
+print("Taille du y_train :", y_train.shape)
+print("Taille du y_test :", y_test.shape)
 
 # TODO: ... and plot graphs of the three distributions in a readable and useful manner (bar graph, either side by side, or with some transparancy)
-plt.figure()
-plt.show()
+unique, counts_y = np.unique(y, return_counts=True)
+_, counts_train = np.unique(y_train, return_counts=True)
+_, counts_test = np.unique(y_test, return_counts=True)
 
+bar_width = 0.3
+x_positions = np.arange(len(unique))
+
+plt.figure(figsize=(10, 6))
+plt.bar(x_positions - bar_width, counts_y, width=bar_width, color='skyblue', edgecolor='black', label="Total")
+plt.bar(x_positions, counts_train, width=bar_width, color='salmon', edgecolor='black', label="Train Set")
+plt.bar(x_positions + bar_width, counts_test, width=bar_width, color='lightgreen', edgecolor='black', label="Test Set")
+
+plt.xlabel("Chiffres (0-9)")
+plt.ylabel("Nombre d'occurrences")
+plt.title("Comparaison des distributions après division")
+plt.xticks(x_positions, unique)
+plt.legend()
+plt.grid(axis="y", linestyle="--", alpha=0.5)
+#plt.show()
 
 # TODO: (once the learning has started, and to be documented in your report) - Impact: Changing test_size affects model training & evaluation.
 
@@ -84,39 +99,45 @@ plt.show()
 from sklearn.base import BaseEstimator, TransformerMixin
 
 class EdgeInfoPreprocessing(BaseEstimator, TransformerMixin):
-    '''A class used to compute an average Sobel estimator on the image
-       This class can be used in conjunction of other feature engineering
-       using Pipelines or FeatureUnion
-    '''
     def __init__(self):
         pass
-    
+
     def fit(self, X, y=None):
-        return self # No fitting needed for this processing
-    
+        return self
+
     def transform(self, X):
-        sobel_feature = np.array([np.mean(sobel(img.reshape((8,8)))) for img in X]).reshape(-1, 1)
-        return sobel_feature
+        n = X.shape[0]
+        sobel_mean = np.zeros((n,1))
+        for i in range(n):
+            img = X[i].reshape(8, 8)
+            sobel_img = sobel(img)
+            sobel_mean[i] = np.mean(sobel_img)
+        return sobel_mean
 
 # TODO: Fill out the useful code for this class
 class ZonalInfoPreprocessing(BaseEstimator, TransformerMixin):
-    '''A class used to compute zone information on the image
-       This class can be used in conjunction of other feature engineering
-       using Pipelines or FeatureUnion
-
-       TODO: Continue this work
-    '''
     def __init__(self):
         pass
-    
-    def fit(self, X, y=None):
-        return self # No fitting needed for this processing
-    
-    def transform(self, X):
-        return X[:,1]
 
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        n = X.shape[0]
+        res = np.zeros((n, 3))
+        for i in range(n):
+            zone1 = np.mean(X[i, 0:24])
+            zone2 = np.mean(X[i, 24:40])
+            zone3 = np.mean(X[i, 40:64])
+            res[i, :] = [zone1, zone2, zone3]
+        return res
 # TODO: Create a single sklearn object handling the computation of all features in parallel
-all_features = None
+from sklearn.preprocessing import FunctionTransformer
+all_features = FeatureUnion([
+    ('pca', PCA(n_components=20)),
+    ('zones', ZonalInfoPreprocessing()),
+    ('sobel', EdgeInfoPreprocessing())
+])
 
 F = all_features.fit(X_train,y).transform(X_train)
 # Let's make sure we have the number of dimensions that we expect!
@@ -128,17 +149,22 @@ print("Nb features computed: ", F.shape[1])
 # avoid forgetting a scaling, or a feature, or ...
 # 
 # TODO: Write your own pipeline, with a linear SVC classifier as the prediction
-clf = Pipeline([('classifier', DummyClassifier())])
+clf = Pipeline([
+    ('scaler', MinMaxScaler()),
+    ('features', all_features),
+    ('postscale', StandardScaler()),
+    ('svc', SVC(kernel='linear'))
+])
 
 ##########################################
 ## Premier entrainement d'un SVC
 ##########################################
 
 # TODO: Train your model via the pipeline
-
+clf.fit(X_train,y_train)
 # TODO: Predict the outcome of the learned algorithm on the train set and then on the test set 
-predict_test = [1]*len(X_test)
-predict_train = [1]*len(X_train)
+predict_train = clf.predict(X_train)
+predict_test = clf.predict(X_test)
 
 print("Accuracy of the SVC on the test set: ", sum(y_test==predict_test)/len(y_test))
 print("Accuracy of the SVC on the train set: ", sum(y_train==predict_train)/len(y_train))
@@ -147,6 +173,16 @@ print("Accuracy of the SVC on the train set: ", sum(y_train==predict_train)/len(
 # 1. Display a print of it
 # 2. Display a nice figure of it
 # 3. Report on how you understand the results
+y_pred = clf.predict(X_test)
+cm = confusion_matrix(y_test, y_pred)
+print(cm)
+
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=range(10), yticklabels=range(10))
+plt.xlabel("Prédictions")
+plt.ylabel("Vérités")
+plt.title("Matrice de confusion du modèle SVC")
+
 
 
 # TODO: Work out the following questions (you may also use the score function from the classifier)
@@ -158,11 +194,25 @@ print("Try different values like 0.1, 0.3, etc., and compare results.\n")
 ## Hyper parameter tuning and CV
 ##########################################
 # TODO: Change from the linear classifier to an rbf kernel
+clf = Pipeline([
+    ('scaler', MinMaxScaler()),
+    ('features', all_features),
+    ('postscale', StandardScaler()),
+    ('svc', SVC(kernel='rbf'))
+])
+clf.fit(X_train, y_train)
 # TODO: List all interesting parameters you may want to adapt from your preprocessing and algorithm pipeline
-# TODO: Create a dictionary with all the parameters to be adapted and the ranges to be tested
 
+# TODO: Create a dictionary with all the parameters to be adapted and the ranges to be tested
+param_grid = {
+    'features__pca__n_components' : [20, 25, 30],
+    'svc__C'  : [0.1,1.0,10.0],
+    'svc__gamma' : [0.01,0.05,0.1,0.25,0.5]
+}
 # TODO: Use a GridSearchCV on 5 folds to optimize the hyper parameters
-grid_search = GridSearchCV(DummyClassifier()) #, verbose=10)
+grid_search = GridSearchCV(clf, param_grid = param_grid)
+grid_search.fit(X_train, y_train)
+
 # TODO: fit the grid search CV and 
 # 1. Check the results
 # 2. Update the original pipeline (or create a new one) with all the optimized hyper parameters
@@ -185,6 +235,15 @@ print("Test different K values and compare the accuracy variation.\n")
 
 
 # Print OvO results
+ovo_svc = OneVsOneClassifier(SVC(kernel='rbf', C=10, gamma='scale'))
+clf = Pipeline([
+    ('scaler', MinMaxScaler()),  
+    ('features', all_features),
+    ('postscale', StandardScaler()),  
+    ('ovo_svc', ovo_svc)
+])
+clf.fit(X_train, y_train)
+
 print(" One-vs-One (OvO) Classification:")
 print(f"- Test score: {clf.score(X_test, y_test)}")
 print(f"- Number of classifiers trained: {len(clf.get_params('classifier__estimators_'))}")
@@ -194,7 +253,14 @@ print("\n Question: How does OvO compare to OvR in execution time?")
 print("Try timing both methods and analyzing efficiency.\n")
 ###################
 # TODO:  One-vs-Rest (OvR) Classification
-
+ovr_svc = OneVsRestClassifier(SVC(kernel='rbf', C=10, gamma=0.05))
+clf = Pipeline([
+    ('scaler', MinMaxScaler()),  
+    ('features', all_features),
+    ('postscale', StandardScaler()),  
+    ('ovr_svc', ovr_svc)
+])
+clf.fit(X_train, y_train)
 
 # Print OvR results
 print(" One-vs-Rest (OvR) Classification:")
