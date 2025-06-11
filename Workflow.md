@@ -27,3 +27,7 @@ This document explains our day to day task, and what we have learned.
 - When reducing the dimensionality of the data, some error compared to the original matrix is inevitable. For this reason, it is important to select the most effective number of dimensions. To help with this, we can plot a graph of the cumulative explained variance versus the number of dimensions retained. This allows us to determine the optimal number of dimensions, in our case, the best choice is 28, keeping 95% of information at a reasonably low dimension.
 
 - We can plot several graphs to compare our results: (1) a comparison between the original image of a digit and its reconstructed version after applying PCA and inverse transformation; (2) a graph of cumulative explained variance as a function of the number of dimensions; and (3) a scatter plot of our data projected onto two principal components, which shows how points with the same value tend to cluster together.
+
+- To simplify our task a bit more we can use a principal called caracteristics extraction, meaning we extract certain shapes and forms from an image that make it easier to compute and to identify, for example you can break the number 5 into 3 lines : one horizontal, one vertical and a flipped "C".
+
+- To do so we need to use Sobel filters (convolution filters), which calculate the gradient intensity and extract the main simple motifs of the image
