@@ -162,7 +162,15 @@ from skimage.filters import sobel
 
 
 # TODO: Compute the average edge intensity for each image and return it as an n by 1 array
-F_edges = sobel(X)
+def apply_sobel(X):
+    n = X.shape[0]
+    sobel_mean = np.zeros((n,1))
+    for i in range(n):
+        img = X[i].reshape(8, 8)
+        sobel_img = sobel(img)
+        sobel_mean[i] = np.mean(sobel_img)
+    return sobel_mean
+F_edges = apply_sobel(X)
 
 # Print feature shape after edge extraction
 print(f"Feature matrix F_edges shape: {F_edges.shape}")
@@ -170,10 +178,14 @@ print(f"Feature matrix F_edges shape: {F_edges.shape}")
 ### connect all the features together
 
 # TODO: Concatenate PCA, zone-based, and edge features
-F_final = None 
+def all_features(X_normalized):
+    pca = PCA(n_components=20)
+    X_pca = pca.fit_transform(X_normalized)
+    X_zone = extract_zone_features(X_normalized)
+    X_sobel = apply_sobel(X_normalized)
+    X_all = np.hstack((X_pca, X_zone, X_sobel))
+    return X_all
 
-# TODO: Normalize final features
-F_final = F_final
+F_final = all_features(F)
 
-# Print final feature matrix shape
-print(f"Final feature matrix F_final shape: {F_final.shape}")
+print(f"Dimensions avec toutes les features :",F_final.shape)
