@@ -53,30 +53,6 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratif
 
 
 # TODO: ... and plot graphs of the three distributions in a readable and useful manner (bar graph, either side by side, or with some transparancy)
-# Compute label distributions
-unique_labels = np.unique(y)
-full_counts = np.bincount(y, minlength=len(unique_labels))
-train_counts = np.bincount(y_train, minlength=len(unique_labels))
-test_counts = np.bincount(y_test, minlength=len(unique_labels))
-
-# Plot distributions side by side
-fig, ax = plt.subplots(figsize=(12, 5))
-
-bar_width = 0.3
-x = np.arange(len(unique_labels))
-
-ax.bar(x - bar_width, full_counts, width=bar_width, alpha=0.7, label="Full Dataset")
-ax.bar(x, train_counts, width=bar_width, alpha=0.7, label="Train Set")
-ax.bar(x + bar_width, test_counts, width=bar_width, alpha=0.7, label="Test Set")
-
-ax.set_xticks(x)
-ax.set_xticklabels(unique_labels)
-ax.set_xlabel("Digit Label")
-ax.set_ylabel("Count")
-ax.set_title("Distribution of Digit Labels in Dataset Splits")
-ax.legend()
-
-plt.show()
 
 
 # TODO: (once the learning has started, and to be documented in your report) - Impact: Changing test_size affects model training & evaluation.
