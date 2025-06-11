@@ -15,6 +15,7 @@ from skimage.filters import sobel
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import GridSearchCV
+import seaborn as sns
 
 
 # TODO: Add any util functions you may have from the previous script
@@ -172,6 +173,16 @@ print("Accuracy of the SVC on the train set: ", sum(y_train==predict_train)/len(
 # 1. Display a print of it
 # 2. Display a nice figure of it
 # 3. Report on how you understand the results
+y_pred = clf.predict(X_test)
+cm = confusion_matrix(y_test, y_pred)
+print(cm)
+
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=range(10), yticklabels=range(10))
+plt.xlabel("Prédictions")
+plt.ylabel("Vérités")
+plt.title("Matrice de confusion du modèle SVC")
+
 
 
 # TODO: Work out the following questions (you may also use the score function from the classifier)
@@ -183,11 +194,25 @@ print("Try different values like 0.1, 0.3, etc., and compare results.\n")
 ## Hyper parameter tuning and CV
 ##########################################
 # TODO: Change from the linear classifier to an rbf kernel
+clf = Pipeline([
+    ('scaler', MinMaxScaler()),
+    ('features', all_features),
+    ('postscale', StandardScaler()),
+    ('svc', SVC(kernel='rbf'))
+])
+clf.fit(X_train, y_train)
 # TODO: List all interesting parameters you may want to adapt from your preprocessing and algorithm pipeline
-# TODO: Create a dictionary with all the parameters to be adapted and the ranges to be tested
 
+# TODO: Create a dictionary with all the parameters to be adapted and the ranges to be tested
+param_grid = {
+    'features__pca__n_components' : [20, 25, 30],
+    'svc__C'  : [0.1,1.0,10.0],
+    'svc__gamma' : [0.01,0.05,0.1,0.25,0.5]
+}
 # TODO: Use a GridSearchCV on 5 folds to optimize the hyper parameters
-grid_search = GridSearchCV(DummyClassifier()) #, verbose=10)
+grid_search = GridSearchCV(clf, param_grid = param_grid)
+grid_search.fit(X_train, y_train)
+
 # TODO: fit the grid search CV and 
 # 1. Check the results
 # 2. Update the original pipeline (or create a new one) with all the optimized hyper parameters
@@ -210,6 +235,15 @@ print("Test different K values and compare the accuracy variation.\n")
 
 
 # Print OvO results
+ovo_svc = OneVsOneClassifier(SVC(kernel='rbf', C=10, gamma='scale'))
+clf = Pipeline([
+    ('scaler', MinMaxScaler()),  
+    ('features', all_features),
+    ('postscale', StandardScaler()),  
+    ('ovo_svc', ovo_svc)
+])
+clf.fit(X_train, y_train)
+
 print(" One-vs-One (OvO) Classification:")
 print(f"- Test score: {clf.score(X_test, y_test)}")
 print(f"- Number of classifiers trained: {len(clf.get_params('classifier__estimators_'))}")
@@ -219,7 +253,14 @@ print("\n Question: How does OvO compare to OvR in execution time?")
 print("Try timing both methods and analyzing efficiency.\n")
 ###################
 # TODO:  One-vs-Rest (OvR) Classification
-
+ovr_svc = OneVsRestClassifier(SVC(kernel='rbf', C=10, gamma=0.05))
+clf = Pipeline([
+    ('scaler', MinMaxScaler()),  
+    ('features', all_features),
+    ('postscale', StandardScaler()),  
+    ('ovr_svc', ovr_svc)
+])
+clf.fit(X_train, y_train)
 
 # Print OvR results
 print(" One-vs-Rest (OvR) Classification:")
