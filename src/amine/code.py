@@ -14,8 +14,10 @@ digits = load_digits()
 # Visualize some images
 def first4():
     for i in range(4):
+        plt.subplot(2,2,i+1)
         plt.imshow(digits.images[i],cmap='gray')
-        plt.show()
+    plt.show()
+
 #first4()
 
 
@@ -130,40 +132,37 @@ plt.title("Image reconstruite")
 
 plt.show()
 
-### TODO: Create a 20 dimensional PCA-based feature matrix
-
-F_pca = None
-
-# Print reduced feature matrix shape
-print(f"Feature matrix F_pca shape: {F_pca.shape}")
-
-
 ##########################################
 ## Feature engineering
 ##########################################
 ### # Function to extract zone-based features
 ###  Zone-Based Partitioning is a feature extraction method
 ### that helps break down an image into smaller meaningful regions to analyze specific patterns.
-def extract_zone_features(images):
-    '''Break down an 8x8 image in 3 zones: row 1-3, 4-5, and 6-8'''
-    # TODO: Fill in code
-    return np.array([])
+def extract_zone_features(X):
+    n = X.shape[0]
+    res = np.zeros((n, 3))
+    for i in range(n):
+        zone1 = np.mean(X[i, 0:24])
+        zone2 = np.mean(X[i, 24:40])
+        zone3 = np.mean(X[i, 40:64])
+        res[i, :] = [zone1, zone2, zone3]
+    return res
 
 # Apply zone-based feature extraction
-F_zones = extract_zone_features('''some data''')
+F_zones = extract_zone_features(X)
 
 # Print extracted feature shape
 print(f"Feature matrix F_zones shape: {F_zones.shape}")
 
 
 ### Edge detection features
-
+from skimage.filters import sobel
 ## TODO: Get used to the Sobel filter by applying it to an image and displaying both the original image 
 # and the result of applying the Sobel filter side by side
 
 
 # TODO: Compute the average edge intensity for each image and return it as an n by 1 array
-F_edges = None
+F_edges = sobel(X)
 
 # Print feature shape after edge extraction
 print(f"Feature matrix F_edges shape: {F_edges.shape}")
