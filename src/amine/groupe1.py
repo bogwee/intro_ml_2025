@@ -9,10 +9,9 @@ from sklearn.datasets import load_digits
 from skimage.filters import sobel
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
-from sklearn.svm import SVC
+from sklearn.model_selection import GridSearchCV
 
 import tensorflow as tf
-from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 import keras
 
 # The lines below shall not be modified!
@@ -63,34 +62,34 @@ class ZonalInfoPreprocessing(BaseEstimator, TransformerMixin):
             res[i, 2] = np.mean(X[i, 2*zone_size:d])
         return res
 
-components = np.argmax(np.cumsum(PCA().fit(X_train).explained_variance_ratio_) >= 0.90) + 1
+components = np.argmax(np.cumsum(PCA(X_train.shape[1]).fit(X_train).explained_variance_ratio_) >= 0.90) + 1
 
 features = FeatureUnion([
-    ('pca', PCA(n_components= components)),
+    ('pca', PCA(n_components = components)),
     ('zones', ZonalInfoPreprocessing()),
     ('sobel', EdgeInfoPreprocessing())
 ])
 
-def builder():
-    model = keras.Sequential([
-        keras.layers.Dense(64, activation='relu', input_shape=(components + 4,)),  
+preprocessing = Pipeline([
+    ('scaler', MinMaxScaler()),
+    ('features', features),
+    ('postscale', StandardScaler())
+])
+
+X_train_transformed = preprocessing.fit_transform(X_train)
+X_test_transformed = preprocessing.transform(X_test)
+
+model = keras.Sequential([
+        keras.layers.Input(shape=(components + 4,)),
+        keras.layers.Dense(128, activation='relu'),
+        keras.layers.Dropout(0.2),
+        keras.layers.Dense(64, activation='relu'),  
         keras.layers.Dense(32, activation='relu'),  
         keras.layers.Dense(10, activation='softmax')
     ])
-    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-    return model
 
-classifier = KerasClassifier(build_fn=builder, epochs=20, batch_size=32)
-
-clf = Pipeline([
-    ('scaler', MinMaxScaler()),
-    ('features', features),
-    ('postscale', StandardScaler()),
-    ('classifier', classifier)
-])
-
-#On entraine le modele
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
 # The next lines shall not be modified
-clf.fit(X_train, y_train)
-print(f"Score on the test set {clf.score(X_test, y_test)}")
+model.fit(X_train_transformed, y_train, epochs=20, validation_split=0.2)
+print(f"Score on the test set (loss, accuracy) {model.evaluate(X_test_transformed, y_test)}")
