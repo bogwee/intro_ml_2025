@@ -2,12 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.datasets import load_digits
 import tensorflow as tf
-from tensorflow import keras
+import keras
 
 # TODO: Load data and splits if necessary
-
-print(tf.__version__)
-print(tf.keras)
 ### TensorFlow is a powerful open-source deep learning framework developed by Google. 
 ## It enables building and training neural networks efficiently, 
 ##using optimized tensor computations. 
@@ -18,7 +15,7 @@ print(tf.keras)
 #TensorFlow integrates Keras natively, making it ideal for rapid AI development.
 
 digits = load_digits()
-X,y = digits.images, digits.target
+X,y = digits.data, digits.target
 # TODO: Create your first fully connected neural network with the following caracteristics:
 # * 1 input layer
 # * 1 hidden layer using 32 neurons
@@ -26,24 +23,18 @@ X,y = digits.images, digits.target
 # * Output layer is activated with softmax
 # * As input, we consider the pixels directly -- we'll look later into using engineered features
 model = keras.Sequential([
-    keras.layers.Dense(64, activation='relu',input_shape=(X.shape)),  
+    keras.layers.Dense(64, activation='relu', input_shape=(X.shape[1],)),  
     keras.layers.Dense(32, activation='relu'),  
     keras.layers.Dense(10, activation='softmax')
 ])
-    
-
 
 
 # TODO: Compile the model (setting parameters on how the model will learn from the data)
 # Use adam optimizer, sparse categorical cross entropy as loss, and at least the accuracy as the metric
-
-
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
 # TODO: Train the model and store training and validation history
-history = None
-
-
-
+history = model.fit(X, y, epochs=5, validation_split=0.2)
 
 # Extract loss values
 train_loss = history.history['loss']
@@ -62,7 +53,7 @@ plt.grid()
 plt.show()
 
 # Save the trained model
-model.save("digit_classifier_model.keras")  # Native Keras format
+model.save("digit_classifier_model_5.keras")  # Native Keras format
 
 # TODO: 
 # For the remaining time of the class, find a way to combine preprocessing + learning algorithm to achieve the best possible scores.
