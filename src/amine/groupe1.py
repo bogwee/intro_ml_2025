@@ -11,6 +11,10 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.svm import SVC
 
+import tensorflow as tf
+from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
+import keras
+
 # The lines below shall not be modified!
 
 # The following will be replaced by our own 
@@ -57,18 +61,32 @@ class ZonalInfoPreprocessing(BaseEstimator, TransformerMixin):
             res[i, 0] = np.mean(X[i, :zone_size])
             res[i, 1] = np.mean(X[i, zone_size:2*zone_size])
             res[i, 2] = np.mean(X[i, 2*zone_size:d])
+        return res
+
+components = np.argmax(np.cumsum(PCA().fit(X_train).explained_variance_ratio_) >= 0.90) + 1
 
 features = FeatureUnion([
-    ('pca', PCA(n_components= np.argmax(np.cumsum(PCA().fit(X_train).explained_variance_ratio_) >= 0.90) + 1)),
+    ('pca', PCA(n_components= components)),
     ('zones', ZonalInfoPreprocessing()),
     ('sobel', EdgeInfoPreprocessing())
 ])
+
+def builder():
+    model = keras.Sequential([
+        keras.layers.Dense(64, activation='relu', input_shape=(components + 4,)),  
+        keras.layers.Dense(32, activation='relu'),  
+        keras.layers.Dense(10, activation='softmax')
+    ])
+    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    return model
+
+classifier = KerasClassifier(build_fn=builder, epochs=20, batch_size=32)
 
 clf = Pipeline([
     ('scaler', MinMaxScaler()),
     ('features', features),
     ('postscale', StandardScaler()),
-    ('classifier', SVC(kernel='linear'))
+    ('classifier', classifier)
 ])
 
 #On entraine le modele
