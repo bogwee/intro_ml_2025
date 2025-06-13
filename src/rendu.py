@@ -1,20 +1,18 @@
 import os.path
 import numpy as np
 
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
-from sklearn.decomposition import PCA
-from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.dummy import DummyClassifier
-from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
-
-from skimage.filters import sobel
-
-from sklearn.datasets import load_digits
-
+from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.datasets import load_digits
+from skimage.filters import sobel
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.model_selection import GridSearchCV
 
-# TODO: Add necessary imports here
+import tensorflow as tf
+import keras
 
 # The lines below shall not be modified!
 
@@ -28,56 +26,70 @@ else:
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 
-# TODO: Prepare your learning pipeline and set all the parameters for your final algorithm.
-## Functions for feature engineering
-def extract_zone_features(images):
-    zone_features = []
-    for img_vector in images:
-        img = img_vector.reshape((8,8))
-        top = np.mean(img[:3, :])  # Top region
-        middle = np.mean(img[3:5, :])  # Middle region
-        bottom = np.mean(img[5:, :])  # Bottom region
-        zone_features.append([top, middle, bottom])
-    return np.array(zone_features)
-
+#Prepare your learning pipeline and set all the parameters for your final algorithm.
 class EdgeInfoPreprocessing(BaseEstimator, TransformerMixin):
-    '''A class used to compute an average Sobel estimator on the image
-       This class can be used in conjunction of other feature engineering
-       using Pipelines or FeatureUnion
-    '''
     def __init__(self):
         pass
-    
+
     def fit(self, X, y=None):
-        return self # No fitting needed for this processing
-    
+        return self
+
     def transform(self, X):
-        sobel_feature = np.array([np.mean(sobel(img.reshape((8,8)))) for img in X]).reshape(-1, 1)
-        return sobel_feature
+        n = X.shape[0]
+        sobel_mean = np.zeros((n,1))
+        for i in range(n):
+            shape = int(np.sqrt(X.shape[1]))
+            img = X[i].reshape(shape, shape)
+            sobel_img = sobel(img)
+            sobel_mean[i] = np.mean(sobel_img)
+        return sobel_mean
 
 class ZonalInfoPreprocessing(BaseEstimator, TransformerMixin):
-    '''A class used to compute zone information on the image
-       This class can be used in conjunction of other feature engineering
-       using Pipelines or FeatureUnion
-
-       TODO: Continue this work
-    '''
     def __init__(self):
         pass
-    
+
     def fit(self, X, y=None):
-        return self # No fitting needed for this processing
-    
+        return self
+
     def transform(self, X):
-        return extract_zone_features(X)
-        # return X[:,1]
+        n, d = X.shape
+        zone_size = d // 3
 
-all_features = FeatureUnion([('pca', PCA(n_components=20)), ('zones', ZonalInfoPreprocessing()), ('sobel', EdgeInfoPreprocessing())])
+        res = np.zeros((n, 3))
+        for i in range(n):
+            res[i, 0] = np.mean(X[i, :zone_size])
+            res[i, 1] = np.mean(X[i, zone_size:2*zone_size])
+            res[i, 2] = np.mean(X[i, 2*zone_size:d])
+        return res
 
-clf = Pipeline([('classifier', DummyClassifier())])
-clf = Pipeline([('prescale', MinMaxScaler()), ('features', all_features), ('postscale', StandardScaler()), ('classifier', SVC(kernel='linear'))])
+components = np.argmax(np.cumsum(PCA(X_train.shape[1]).fit(X_train).explained_variance_ratio_) >= 0.90) + 1
 
+features = FeatureUnion([
+    ('pca', PCA(n_components = components)),
+    ('zones', ZonalInfoPreprocessing()),
+    ('sobel', EdgeInfoPreprocessing())
+])
+
+preprocessing = Pipeline([
+    ('scaler', MinMaxScaler()),
+    ('features', features),
+    ('postscale', StandardScaler())
+])
+
+X_train_transformed = preprocessing.fit_transform(X_train)
+X_test_transformed = preprocessing.transform(X_test)
+
+model = keras.Sequential([
+        keras.layers.Input(shape=(components + 4,)),
+        keras.layers.Dense(128, activation='relu'),
+        keras.layers.Dropout(0.2),
+        keras.layers.Dense(64, activation='relu'),  
+        keras.layers.Dense(32, activation='relu'),  
+        keras.layers.Dense(10, activation='softmax')
+    ])
+
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
 # The next lines shall not be modified
-clf.fit(X_train, y_train)
-print(f"Score on the test set {clf.score(X_test, y_test)}")
+model.fit(X_train_transformed, y_train, epochs=20, validation_split=0.2)
+print(f"Score on the test set (loss, accuracy) {model.evaluate(X_test_transformed, y_test)}")
