@@ -18,7 +18,7 @@ def first4():
         plt.imshow(digits.images[i],cmap='gray')
     plt.show()
 
-#first4()
+first4()
 
 
 # Display at least one random sample par class (some repetitions of class... oh well)
@@ -55,7 +55,7 @@ def get_statistics_text(digits):
     for val, count in zip(unique, counts):
         print(f"{val} : {count} images")
 
-#get_statistics_text(digits)
+get_statistics_text(digits)
 
 
 ##########################################
